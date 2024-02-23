@@ -1106,7 +1106,7 @@ DataT read_image(const sampled_image_handle &imageHandle [[maybe_unused]],
  *  @param   imageHandle The image handle
  *  @param   coords The coordinates at which to write image data
  */
-template <typename DataT, typename CoordT>
+template <typename DataT, typename HintT = DataT, typename CoordT>
 void write_image(const unsampled_image_handle &imageHandle [[maybe_unused]],
                  const CoordT &coords [[maybe_unused]],
                  const DataT &color [[maybe_unused]]) {
@@ -1125,6 +1125,22 @@ void write_image(const unsampled_image_handle &imageHandle [[maybe_unused]],
     __invoke__ImageWrite((uint64_t)imageHandle.raw_handle, coords,
                          detail::convert_color(color));
   }
+#else
+  constexpr size_t NDims = (coordSize == 4) ? 3 : coordSize;
+  if constexpr (detail::is_recognized_standard_type<DataT>()) {
+    __invoke__ImageWrite(
+        detail::convert_handle_to_image<OCLImageTyWrite<NDims>>(
+            imageHandle.raw_handle),
+        coords, color);
+  } else {
+    // Convert DataT to a supported backend write type when user-defined type is
+    // passed
+    __invoke__ImageWrite(
+        detail::convert_handle_to_image<OCLImageTyWrite<NDims>>(
+            imageHandle.raw_handle),
+        coords, sycl::bit_cast<HintT>(color));
+  }
+#endif
 #else
   assert(false); // Bindless images not yet implemented on host
 #endif

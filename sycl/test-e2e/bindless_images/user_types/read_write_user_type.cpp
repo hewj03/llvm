@@ -79,7 +79,7 @@ bool run_test() {
         myPixel +=
             syclexp::sample_image<MyType, OutType>(sampledImgIn, floatCoords);
 
-        syclexp::write_image(imgOut, coords, myPixel);
+        syclexp::write_image<MyType, OutType>(imgOut, coords, myPixel);
       });
     });
     q.wait_and_throw();
